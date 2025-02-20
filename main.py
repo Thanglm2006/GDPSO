@@ -14,36 +14,11 @@ c1=1.4961
 c2=1.4961
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 # in this code, I count the nodes from 0 to n-1
-dataset='GN-0.70'
+dataset='karate'
 # n=128
 # m=2048
 fitness_function='NMI'
-# with open(f'/home/thanglm2006/dataset/{dataset}.txt') as f:
-#     lines = f.readlines()
-#     tmp=lines[0].split()
-#     n = int(tmp[0])
-#     m = int(tmp[1])
-#     adj = np.zeros((n,n))
-#     degree_array = np.zeros(n)
-#     adj_list = [[] for i in range(n)]
-#     adj_list2 = [[] for i in range(n)]
-#     for i in range(1,len(lines)):
-#         tmp = lines[i].split()
-#         u = int(tmp[0])-1
-#         v = int(tmp[1])-1
-#         adj[u][v]=1
-#         adj[v][u]=1
-#         adj_list[u].append(v)
-#         adj_list[v].append(u)
-#         adj_list2[u].append(v)
-# for i in range(n):
-#     for j in range(n):
-#       degree_array[i]+=adj[i][j]
-with open(f'/home/thanglm2006/Experimental data/synthetic networks/GN/{dataset}/community.dat') as f:
-    lines = f.readlines()
-    true_labels = [int(x.split()[1]) for x in lines]
-
-with open(f'/home/thanglm2006/Experimental data/synthetic networks/GN/{dataset}/network.dat') as f:
+with open(f'/home/thanglm2006/dataset/{dataset}.txt') as f:
     lines = f.readlines()
     tmp=lines[0].split()
     n = int(tmp[0])
@@ -61,6 +36,31 @@ with open(f'/home/thanglm2006/Experimental data/synthetic networks/GN/{dataset}/
         adj_list[u].append(v)
         adj_list[v].append(u)
         adj_list2[u].append(v)
+for i in range(n):
+    for j in range(n):
+      degree_array[i]+=adj[i][j]
+# with open(f'/home/thanglm2006/Experimental data/synthetic networks/GN/{dataset}/community.dat') as f:
+#     lines = f.readlines()
+#     true_labels = [int(x.split()[1]) for x in lines]
+#
+# with open(f'/home/thanglm2006/Experimental data/synthetic networks/GN/{dataset}/network.dat') as f:
+#     lines = f.readlines()
+#     tmp=lines[0].split()
+#     n = int(tmp[0])
+#     m = int(tmp[1])
+#     adj = np.zeros((n,n))
+#     degree_array = np.zeros(n)
+#     adj_list = [[] for i in range(n)]
+#     adj_list2 = [[] for i in range(n)]
+#     for i in range(1,len(lines)):
+#         tmp = lines[i].split()
+#         u = int(tmp[0])-1
+#         v = int(tmp[1])-1
+#         adj[u][v]=1
+#         adj[v][u]=1
+#         adj_list[u].append(v)
+#         adj_list[v].append(u)
+#         adj_list2[u].append(v)
 GBest=np.arange(n)
 population_X=np.array([np.arange(n) for i in range(population)])
 PBest=np.copy(population_X)
@@ -111,10 +111,11 @@ def fitness_calculator2(tempCommunity,originCommunity,fitness,u):
 #     else:
 #         return 0
 def NMI_calculator(community):
-    try:
-        return normalized_mutual_info_score(community, true_labels)
-    except:
-        return 0
+    return 0
+    # try:
+    #     return normalized_mutual_info_score(community, true_labels)
+    # except:
+    #     return 0
 def reorder(tempCommunities):
     '''This is for avoiding the case that the community is the same as original community'''
     tmp=np.arange(n)
@@ -159,14 +160,14 @@ def update_status(i,j):
                 tempCommunities[k] = tempCommunities[l]
                 tempFitness = NMI_calculator(tempCommunities)
                 if tempFitness == 0:
-                    tempFitness = fitness_calculator2(tempCommunities, population_X[j], population_fitness[j], k)
+                    tempFitness = fitness_calculator(tempCommunities)
                 if tempFitness > best_finess:
                     best_finess = tempFitness
                     best_communities = np.copy(tempCommunities)
             best_communities = reorder(best_communities)
             best_finess = NMI_calculator(best_communities)
             if best_finess == 0:
-                best_finess = fitness_calculator2(best_communities, population_X[j], population_fitness[j], k)
+                best_finess = fitness_calculator(best_communities)
             population_X[j] = np.copy(best_communities)
             population_fitness[j] = best_finess
             if best_finess > PBest_fitness[j]:
@@ -197,7 +198,7 @@ def update_status(i,j):
 '''Population Initialization'''
 for i in range(population):
     for j in range(int(alpha * n)):
-        random_vertice = np.random.randint(0, n - 1)
+        random_vertice = np.random.randint(0, n)
         for k in adj_list[random_vertice]:
             population_X[i][k] = population_X[i][random_vertice]
 
