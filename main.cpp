@@ -10,9 +10,8 @@ using namespace std;
 #define ll long long
 #define faster ios_base::sync_with_stdio(false); cin.tie(NULL); cout.tie(NULL);
 auto start = std::chrono::high_resolution_clock::now();
-std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis(0.0, 1.0);
+std::mt19937 gen(0);
+std::uniform_real_distribution<> dis(0.0, 1.0);
 int n,m;
 const int maxIter=100;
 const int popSize=100;
@@ -77,25 +76,17 @@ void updateStatus(int j) {
     //####################################### update velocity #######################################
     double r1 = dis(gen);
     double r2 = dis(gen);
-    r1 *= c1;
-    r2 *= c2;
-    vector<int> v1(n, 0), v2(n, 0);
-    for (int k = 0; k < n; k++) {
-        population_v[j][k] *= w;
-        double temp1 = 0, temp2 = 0;
-        if (population_x[j][k] != PBest[j][k]) {
-            temp1 = 1;
-        }
-        if (population_x[j][k] != GBest[k]) {
-            temp2 = 1;
-        }
-        temp1 *= r1; temp2 *= r2;
-        if (population_v[j][k] + temp1 + temp2 >= 1)
-            population_v[j][k] = 1;
-        else
-            population_v[j][k] = 0;
+    vector<double> tmp(n);
+    for(int k=0;k<n;k++)
+        tmp[k]=population_v[j][k]*w;
+    for(int k=0;k<n;k++){
+        int diff1=(population_x[j][k]!=PBest[j][k])?1:0;
+        int diff2=(population_x[j][k]!=GBest[k])?1:0;
+        double temp1=c1*r1*diff1;
+        double temp2=c2*r2*diff2;
+        double sumVel=tmp[k]+temp1+temp2;
+        population_v[j][k]=(sumVel>=1.0)?1:0;
     }
-
     //####################################### update position #######################################
     for (int k = 0; k < n; k++) {
         if (population_v[j][k] == 1) {
@@ -127,40 +118,39 @@ void updateStatus(int j) {
         }
     }
 }
-void init(std::uniform_int_distribution<> randoo) {
-    population_x.resize(popSize);
-    PBest.resize(popSize);
-    population_v.resize(popSize);
-    PBest_Fitness.resize(popSize,-1000.0);
-    P_Fitness.resize(popSize,-1000.0);
+void init() {
+    population_x.resize(popSize,vector<int>(n,0));
+    PBest.resize(popSize,vector<int>(n,0));
+    population_v.resize(popSize,vector<int>(n,0));
+    PBest_Fitness.resize(popSize,-99999.0);
+    P_Fitness.resize(popSize,-99999.0);
     GBest.resize(n);
-    for (int i=0;i<popSize;i++){
-        if(i<n){
-            GBest[i]=i;
-        }
-        population_x[i].resize(n);
-        PBest[i].resize(n);
-        population_v[i].resize(n,0);
-        for(int j=0;j<n;j++){
-            population_x[i][j]=j;
-            PBest[i][j]=j;
-        }
-        int randNode = randoo(gen);
-        for (int k=0;k<int(alpha*n);k++) for(int j:adj_list[randNode]){
-            population_x[i][j]=population_x[i][randNode];
-        }
-        P_Fitness[i]=fitnessCal(population_x[i]);
-        population_x[i] = reorder(population_x[i]);
-        if(P_Fitness[i]>PBest_Fitness[i]){
-            PBest_Fitness[i]=P_Fitness[i];
-            PBest[i]=population_x[i];
-            if (PBest_Fitness[i]>GBest_Fitness){
-                GBest_Fitness=PBest_Fitness[i];
-                GBest=PBest[i];
+   for(int i=0;i<popSize;i++){
+       for(int node=0;node<n;node++){
+           population_x[i][node]=node;
+           PBest[i][node]=node;
+           population_v[i][node]=0;
+       }
+    }
+    for(int i=0;i<popSize;i++){
+        int numAlpha=static_cast<int>(alpha*n);
+        for(int k=0;k<numAlpha;k++){
+            int randNode=std::uniform_int_distribution<>(0,n-1)(gen);
+            for(auto neigh:adj_list[randNode]){
+                population_x[i][neigh]=population_x[i][randNode];
             }
-
         }
-
+        population_x[i]=reorder(population_x[i]);
+        double fit=fitnessCal(population_x[i]);
+        P_Fitness[i]=fit;
+        if(fit>=PBest_Fitness[i]){
+            PBest[i]=population_x[i];
+            PBest_Fitness[i]=fit;
+            if(fit>GBest_Fitness){
+                GBest_Fitness=fit;
+                GBest=population_x[i];
+            }
+        }
     }
     
     return;
@@ -171,9 +161,8 @@ int main(){
     // freopen("/home/thanglm2006/Experimental data/synthetic networks/GN/GN-0.00/network.dat","r",stdin);
     // // cin>>n>>m;
     // n=128;m=2048;
-    freopen("/home/thanglm2006/dataset/karate.txt", "r", stdin);
+    freopen("/home/thanglm2006/dataset/football.txt", "r", stdin);
     cin>>n>>m;
-    std::uniform_int_distribution<> randoo(0, n-1);
     adj.resize(n,vector<int>(n,0));
     degreeArr.resize(n,0);
     adj_list.resize(n);
@@ -187,7 +176,7 @@ int main(){
         degreeArr[u-1]++;
         degreeArr[v-1]++;                           
     }
-    init(randoo);
+    init();
     for(int i=0;i<maxIter;i++){
         for(int j=0;j<popSize;j++){
             updateStatus(j);
